@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: ghee-deployment
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: ghee-app
+
+  template:
+    metadata:
+      labels:
+        app: ghee-app
+
+    spec:
+      containers:
+        - name: ghee-container
+          image: pratik123/ghee:v1
+          ports:
+            - containerPort: 5656
+
+---
+
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: ghee-service
+
+spec:
+  type: ClusterIP
+
+  selector:
+    app: ghee-app
+
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5656
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+
+metadata:
+  name: ghee-ingress
+
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+
+spec:
+  ingressClassName: nginx
+
+  rules:
+    - http:
+        paths:
+          - path: /ghee(/|$)(.*)
+            pathType: Prefix
+
+            backend:
+              service:
+                name: ghee-service
+                port:
+                  number: 80
